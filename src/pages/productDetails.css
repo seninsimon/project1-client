@@ -1,0 +1,19 @@
+@media (max-width: 1046px) {
+    .media-query-product-details {
+     flex-direction: column;
+    }
+  }
+
+  @media (max-width: 619px) {
+    .disableimg {
+     display: none;
+    }
+  }
+
+  .h-96 {
+    height: 30rem;
+}
+
+.w-96 {
+  width: 30rem;
+}
