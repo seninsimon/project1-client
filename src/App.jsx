@@ -35,9 +35,9 @@ function App() {
     '/checkout',
     '/ordersuccessfull',
     '/category/:categoryname',
-    '/user/:id/profile',
-    '/user/:id/address',
-    '/user/:id/orders'
+    '/user/profile',
+    '/user/address',
+    '/user/orders'
   ];
 
   // Check if the current location matches any valid path
@@ -60,14 +60,14 @@ function App() {
         <Route path='/checkout' element={<Chekout />} />
         <Route path='/ordersuccessfull' element={<Thankyou />} />
         <Route path="/category/:categoryname" element={<CategoryPage />} />
-        <Route path='/user/:id' element={<UserLayout />}>
+        <Route path='/user' element={<UserLayout />}>
           <Route path="profile" element={<Profile />} />
           <Route path="address" element={<ManageAddress />} />
           <Route path="orders" element={<Orders />} />
         </Route>
 
         {/* Catch-all Route for invalid URLs */}
-        {/* <Route path="*" element={<Four04/>} /> */}
+        <Route path="*" element={<Four04/>} />
 
         
       </Routes>

@@ -131,7 +131,7 @@ const ZenztoreNav = () => {
                     </button>
 
                     <div className="relative cursor-pointer">
-                        <Link to="/user/:id" ><CiUser size={35} className="border rounded-lg text-gray-500" /></Link>
+                        <Link to="/user" ><CiUser size={35} className="border rounded-lg text-gray-500" /></Link>
 
 
                     </div>

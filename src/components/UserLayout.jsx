@@ -1,8 +1,20 @@
-import React from "react";
-import { NavLink, Outlet } from "react-router-dom";
+import React, { useEffect } from "react";
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import ZenztoreNav from "./ZenztoreNav";
 
+
 const UserLayout = () => {
+
+  const navigate = useNavigate();
+
+   useEffect(()=>
+  {
+
+    navigate('/user/profile')
+    
+  },[])
+
+
   return (
     <>
     <ZenztoreNav/>
