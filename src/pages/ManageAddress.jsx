@@ -64,39 +64,60 @@ const ManageAddress = () => {
   };
 
   const handleSaveAddress = async () => {
+    // Basic Validation
+    const { fullName, phoneNumber, address, city, state, pincode } = selectedAddress;
+  
+    if (!/^[a-zA-Z\s]{3,}$/.test(fullName)) {
+      toast.error("Name must contain at least 3 letters and only letters.");
+      return;
+    }
+  
+    if (!/^[a-zA-Z\s]+$/.test(fullName)) {
+      toast.error("Name must only contain letters.");
+      return;
+    }
+  
+    if (!/^\d{10}$/.test(phoneNumber)) {
+      toast.error("Phone number must be 10 digits.");
+      return;
+    }
+  
+    if (pincode.length !== 6 || isNaN(pincode)) {
+      toast.error("Pincode must be a 6-digit number.");
+      return;
+    }
+  
     try {
-      const token = localStorage.getItem('usertoken') || localStorage.getItem('authToken');
+      const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
       if (selectedAddress._id) {
-        await axiosClient.post('/editaddress', { token, ...selectedAddress });
+        // Edit Address
+        await axiosClient.post("/editaddress", { token, ...selectedAddress });
         setAddresses((prevAddresses) =>
           prevAddresses.map((address) =>
             address._id === selectedAddress._id ? selectedAddress : address
           )
         );
-        toast.success('Address updated successfully');
+        toast.success("Address updated successfully");
       } else {
-        const response = await axiosClient.post('/addnewaddress', { token, ...selectedAddress });
+        // Add New Address
+        const response = await axiosClient.post("/addnewaddress", { token, ...selectedAddress });
         setAddresses((prevAddresses) => [...prevAddresses, response.data.address]);
-        toast.success('Address added successfully');
+        toast.success("Address added successfully");
       }
       setIsModalOpen(false);
-      fetchAddresses()
+      fetchAddresses();
     } catch (error) {
-      console.error('Error saving address:', error);
-      console.log("error.response",error.response);
-      
-      if(error.response.data.success == false)
-      {
-        toast.error('cannot add more than 3 addresses');
+      console.error("Error saving address:", error);
+      console.log("error.response", error.response);
+  
+      if (error.response?.data?.success === false) {
+        toast.error("Cannot add more than 3 addresses");
+      } else {
+        toast.error("Failed to save address");
       }
-      else{
-        toast.error('Failed to save address');
-      }
-
-      
     }
   };
-
+  
   const handleCancelEdit = () => {
     setIsModalOpen(false);
     setSelectedAddress(null);

@@ -19,6 +19,9 @@ import Chekout from './pages/Chekout';
 import Thankyou from './pages/Thankyou';
 import CategoryPage from './pages/CategoryPage';
 import Four04 from './Four04';
+import Wishlist from './pages/Wishlist';
+import Wallet from './pages/Wallet';
+
 
 function App() {
   const location = useLocation(); // Get the current location
@@ -50,6 +53,7 @@ function App() {
       <ToastContainer />
       <Scroll />
       <Routes>
+      
         <Route path='/' element={<Zenztore />} />
         <Route path='/signup' element={<Signup />} />
         <Route path='/login' element={<Login />} />
@@ -61,9 +65,13 @@ function App() {
         <Route path='/ordersuccessfull' element={<Thankyou />} />
         <Route path="/category/:categoryname" element={<CategoryPage />} />
         <Route path='/user' element={<UserLayout />}>
-          <Route path="profile" element={<Profile />} />
+          <Route index element={<Profile />} />
+          <Route path='profile' element={<Profile />} />
           <Route path="address" element={<ManageAddress />} />
           <Route path="orders" element={<Orders />} />
+          <Route path="wishlist" element={<Wishlist />} />
+          <Route path="Wallet" element={<Wallet />} />
+
         </Route>
 
         {/* Catch-all Route for invalid URLs */}

@@ -1,7 +1,19 @@
+
+
+
 import React, { useState } from 'react';
 
 const AddressAddModal = ({ isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
+    name: '',
+    number: '',
+    address: '',
+    pincode: '',
+    city: '',
+    state: '',
+  });
+
+  const [errors, setErrors] = useState({
     name: '',
     number: '',
     address: '',
@@ -18,11 +30,58 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
     }));
   };
 
+  const validateForm = () => {
+    let isValid = true;
+    let newErrors = {};
+
+    // Validate Name
+    if (!formData.name || formData.name.length < 3) {
+      newErrors.name = 'Name must be at least 3 characters long.';
+      isValid = false;
+    }
+
+    // Validate Mobile Number
+    if (!formData.number || !/^\d{10}$/.test(formData.number)) {
+      newErrors.number = 'Mobile number must be 10 digits.';
+      isValid = false;
+    }
+
+    // Validate Address
+    if (!formData.address) {
+      newErrors.address = 'Address is required.';
+      isValid = false;
+    }
+
+    // Validate City
+    if (!formData.city) {
+      newErrors.city = 'City is required.';
+      isValid = false;
+    }
+
+    // Validate State
+    if (!formData.state) {
+      newErrors.state = 'State is required.';
+      isValid = false;
+    }
+
+    // Validate Pincode
+    if (!formData.pincode || !/^\d{6}$/.test(formData.pincode)) {
+      newErrors.pincode = 'Pincode must be a 6-digit number.';
+      isValid = false;
+    }
+
+    setErrors(newErrors);
+    return isValid;
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Save the address (call the onSave function from the parent)
-    onSave(formData);
-    onClose(); // Close the modal after saving
+
+    if (validateForm()) {
+      // If form is valid, call the onSave function from the parent
+      onSave(formData);
+      onClose(); // Close the modal after saving
+    }
   };
 
   if (!isOpen) return null;
@@ -40,9 +99,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="name"
                 value={formData.name}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.name ? 'border-red-500' : ''}`}
               />
+              {errors.name && <p className="text-sm text-red-500">{errors.name}</p>}
             </div>
 
             <div>
@@ -52,9 +111,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="number"
                 value={formData.number}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.number ? 'border-red-500' : ''}`}
               />
+              {errors.number && <p className="text-sm text-red-500">{errors.number}</p>}
             </div>
 
             <div>
@@ -64,9 +123,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.address ? 'border-red-500' : ''}`}
               />
+              {errors.address && <p className="text-sm text-red-500">{errors.address}</p>}
             </div>
 
             <div>
@@ -76,9 +135,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.city ? 'border-red-500' : ''}`}
               />
+              {errors.city && <p className="text-sm text-red-500">{errors.city}</p>}
             </div>
 
             <div>
@@ -88,9 +147,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.state ? 'border-red-500' : ''}`}
               />
+              {errors.state && <p className="text-sm text-red-500">{errors.state}</p>}
             </div>
 
             <div>
@@ -100,9 +159,9 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
                 name="pincode"
                 value={formData.pincode}
                 onChange={handleChange}
-                className="w-full p-2 border rounded-lg"
-                required
+                className={`w-full p-2 border rounded-lg ${errors.pincode ? 'border-red-500' : ''}`}
               />
+              {errors.pincode && <p className="text-sm text-red-500">{errors.pincode}</p>}
             </div>
 
             <div className="flex justify-end space-x-4 mt-4">
@@ -128,3 +187,4 @@ const AddressAddModal = ({ isOpen, onClose, onSave }) => {
 };
 
 export default AddressAddModal;
+

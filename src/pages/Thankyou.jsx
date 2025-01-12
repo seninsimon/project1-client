@@ -38,10 +38,19 @@ const Thankyou = () => {
           <p className="text-lg text-gray-700 mb-6">Your order has been placed successfully.</p>
           <p className="text-gray-600">We appreciate your business and hope you enjoy your purchase.</p>
           <div className="mt-8">
-            <a href="/" className="inline-block bg-orange-500 text-white px-6 py-3 rounded-lg shadow hover:bg-orange-600 transition duration-300">
+            <a href="/" className="inline-block bg-yellow-500 text-white px-6 py-3 rounded-lg shadow hover:bg-orange-600 transition duration-300">
               Continue Shopping
             </a>
+
           </div>
+          <div className="flex justify-center items-center py-4">
+  <a href="/user/orders">
+    <button className="px-6 py-3 bg-orange-500 text-white rounded-lg shadow-md hover:bg-orange-400 hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-400">
+      Go to Orders
+    </button>
+  </a>
+</div>
+
         </motion.div>
       </div>
     </>
