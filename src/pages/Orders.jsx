@@ -14,6 +14,8 @@ const Orders = () => {
   const [quantityToCancel, setQuantityToCancel] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 5;
+  const [totalPrice , setTotalPrice] = useState(0)
+  const [paymentmethod , setpaymentmethod] = useState("")
 
   const navigate = useNavigate();
   const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
@@ -38,10 +40,12 @@ const Orders = () => {
   };
 
   // Handle order cancellation
-  const handleCancelOrder = async () => {
+  const handleCancelOrder = async (totprice) => {
+    console.log("total price :",totprice);
+    
     try {
       const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
-      await cancelOrder(token, orderToCancel, quantityToCancel);
+      await cancelOrder(token, orderToCancel, quantityToCancel , totprice , paymentmethod );
 
       // Update orders and paginatedOrders states
       setOrders((prevOrders) =>
@@ -63,11 +67,15 @@ const Orders = () => {
     }
   };
 
+ 
+
 
   // Open confirmation modal
-  const openConfirmModal = (orderId, quantity) => {
+  const openConfirmModal = (orderId, quantity , totalprice , paymentmehtod) => {
     setOrderToCancel(orderId);
     setQuantityToCancel(quantity);
+    setTotalPrice(totalprice)
+    setpaymentmethod(paymentmehtod)
     setIsConfirmModalOpen(true);
   };
 
@@ -79,9 +87,33 @@ const Orders = () => {
   };
 
   // Navigate to product detail page
-  const handleProductDetailPage = (id) => {
-    navigate(`/product/${id}`);
-  };
+  // Update handleProductReturn function
+const handleProductReturn = async (productid, orderid) => {
+  Swal.fire({
+    title: "Are you sure?",
+    text: "Do you really want to return this product?",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonColor: "#3085d6",
+    cancelButtonColor: "#d33",
+    confirmButtonText: "Yes, return it!",
+  }).then(async (result) => {
+    if (result.isConfirmed) {
+      try {
+        const response = await axiosClient.post('/returnproductid', { productid, orderid });
+        console.log(response);
+        fetchUserOrders(); // Refresh orders after returning the product
+
+        Swal.fire("Returned!", "The product has been successfully returned.", "success");
+      } catch (error) {
+        console.error("Error returning product:", error);
+
+        Swal.fire("Error!", "Something went wrong while returning the product.", "error");
+      }
+    }
+  });
+};
+
 
   // Handle page change
   const handlePageChange = (pageNumber) => {
@@ -95,44 +127,7 @@ const Orders = () => {
   const totalPages = Math.ceil(orders.length / ordersPerPage);
 
 
-  const handleReturn = async (orderid, token) => {
-    console.log("orderid",orderid);
-    
-    Swal.fire({
-      title: "Are you sure?",
-      text: "Do you want to return this product?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, return it!",
-      cancelButtonText: "Cancel",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          console.log("Order ID:", orderid);
 
-          const returnResponse = await axiosClient.post('/productreturn', { orderid, token });
-          console.log("Return response:", returnResponse);
-
-          Swal.fire(
-            "Returned!",
-            "Your return request has been processed successfully.",
-            "success"
-          );
-          fetchUserOrders()
-        } catch (error) {
-          console.log(error);
-
-          Swal.fire(
-            "Error!",
-            "Something went wrong while processing your return request.",
-            "error"
-          );
-        }
-      }
-    });
-  };
 
 
   return (
@@ -167,7 +162,7 @@ const Orders = () => {
               <div className="flex-1">
                 {/* Order ID and Status */}
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-xl font-bold text-gray-700">Order ID: {order._id}</h3>
+                  <h3 className="text-xl font-bold text-gray-700">Order ID: {order._id.slice(-5)}</h3>
                   <span
                     className={`px-3 py-1 text-sm font-semibold rounded ${order.status === "Delivered"
                       ? "bg-green-100 text-green-800"
@@ -196,20 +191,44 @@ const Orders = () => {
                 <div className="mb-4">
                   <h4 className="text-lg font-semibold mb-2 text-gray-700">Items:</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    
                     {order.products.map((product) => (
                       <div
                         key={product._id}
-                        className="border p-4 rounded-lg flex items-center space-x-4 bg-gray-50 hover:shadow-md cursor-pointer"
-                        onClick={() => handleProductDetailPage(product.productId._id)}
+                        className="border p-4 rounded-lg flex items-center space-x-4 bg-gray-50 hover:shadow-md"
                       >
                         <img
                           src={product.image}
                           alt={product.productName}
-                          className="w-16 h-16 object-cover rounded"
+                          className="w-16 h-16 object-cover rounded cursor-pointer"
+                          onClick={()=>navigate(`/product/${product.productId._id}`)}
                         />
-                        <div>
+                        {console.log(product)
+                        }
+                        <div className="flex flex-col">
                           <p className="text-lg font-medium text-gray-700">{product.productName}</p>
                           <p className="text-gray-500">Quantity: {product.quantity}</p>
+                          {/* Show "Return this product" button only if order is delivered and product is not returned */}
+                          {order.status === "Delivered" && !product.isProductReturned && (
+                            <button
+                              onClick={() => {
+                               
+                                handleProductReturn(product.productId._id, order._id);
+                              }}
+                              className="mt-2 py-1 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                            >
+                              Return this product
+                            </button>
+                          )}
+                          {/* Show disabled button if the product has already been returned */}
+                          {product.isProductReturned && (
+                            <button
+                              disabled
+                              className="mt-2 py-1 px-4 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg"
+                            >
+                              Product Returned
+                            </button>
+                          )}
                         </div>
                       </div>
                     ))}
@@ -218,13 +237,19 @@ const Orders = () => {
 
 
 
+
                 {/* Action Button */}
                 <div className="flex justify-start">
                   <button
                     onClick={() =>
                       openConfirmModal(
+                        
                         order._id,
-                        order.products.reduce((acc, product) => acc + product.quantity, 0)
+                        order.products.reduce((acc, product) => acc + product.quantity, 0),
+                        order.totalPrice,
+                        order.paymentMethod
+
+                        
                       )
                     }
                     className={`px-4 py-2 rounded text-sm font-semibold ${order.status === "Cancelled" || order.status === "Delivered"
@@ -237,25 +262,7 @@ const Orders = () => {
                   </button>
                   <div>
 
-                    <td className="text-center">
-                      {order.status === "Delivered" ? (
-                        order.isReturned ? (
-                          <button
-                            className="px-4 py-2 ml-5 bg-gray-400 text-white text-sm font-medium rounded-md cursor-not-allowed"
-                            disabled
-                          >
-                            Order Returned
-                          </button>
-                        ) : (
-                          <button
-                            className="px-4 py-2 ml-5 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600 transition"
-                            onClick={() => handleReturn(order._id, token)}
-                          >
-                            Return Order
-                          </button>
-                        )
-                      ) : null}
-                    </td>
+
 
 
 
@@ -302,7 +309,7 @@ const Orders = () => {
             <p>Are you sure you want to cancel this order?</p>
             <div className="flex space-x-4 mt-4">
               <button
-                onClick={handleCancelOrder}
+                onClick={()=>handleCancelOrder(totalPrice)}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 Yes, Cancel

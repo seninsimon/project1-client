@@ -1,131 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import ZenztoreNav from '../components/ZenztoreNav';
-import CategoryNav from '../components/CategoryNav';
-import axiosClient from '../api/axiosClient';
-import { Link, useNavigate, useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
-
+import React, { useEffect, useState } from "react";
+import { motion } from "framer-motion";
+import ZenztoreNav from "../components/ZenztoreNav";
+import CategoryNav from "../components/CategoryNav";
+import axiosClient from "../api/axiosClient";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 const CategoryPage = () => {
   const { categoryname } = useParams();
   const [productDetails, setProductDetails] = useState([]);
-  const [filteredProducts, setFilteredProducts] = useState([]);
-  const [filter, setFilter] = useState('');
+  const [totalPages, setTotalPages] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
-  const [cat, setCat] = useState('');
-  const productsPerPage = 3;
+  const [cat, setCat] = useState("");
+  const [sort, setSort] = useState("");
+  const [searchTerm, setSearchTerm] = useState("");
 
   const navigate = useNavigate();
+  const productsPerPage = 3; // Limit for products per page
 
   useEffect(() => {
     fetchCategoryDetails();
-  }, [categoryname, navigate]);
-
-  useEffect(() => {
-    applyFilter();
-  }, [filter, productDetails]);
+  }, [categoryname, currentPage, sort, searchTerm]);
 
   const fetchCategoryDetails = async () => {
     try {
-      const response = await axiosClient.get(`/category/${categoryname}`);
-      setProductDetails(response.data.productDetails);
-      setCat(response.data.productDetails[0].categoryId.categoryName);
+      const response = await axiosClient.get(`/category/${categoryname}`, {
+        params: {
+          sort,
+          search: searchTerm,
+          page: currentPage,
+          limit: productsPerPage,
+        },
+      });
+
+      const { productDetails, totalPages } = response.data;
+      setProductDetails(productDetails);
+      setTotalPages(totalPages);
+      if (productDetails.length > 0) {
+        setCat(productDetails[0].categoryId.categoryName);
+      }
     } catch (error) {
       console.log(error);
-      navigate('*');
+      navigate("*");
     }
   };
-
-  const handleProductDetails = (id) => {
-    navigate(`/product/${id}`);
-  };
-
-  const applyFilter = () => {
-    let sortedProducts = [...productDetails];
-    switch (filter) {
-      case 'popularity':
-        sortedProducts.sort((a, b) => b.popularity - a.popularity);
-        break;
-      case 'priceLowHigh':
-        sortedProducts.sort((a, b) => a.price - b.price);
-        break;
-      case 'priceHighLow':
-        sortedProducts.sort((a, b) => b.price - a.price);
-        break;
-      case 'averageRating':
-        sortedProducts.sort((a, b) => b.averageRating - a.averageRating);
-        break;
-      case 'featured':
-        sortedProducts.sort((a, b) => b.featured - a.featured);
-        break;
-      case 'newArrivals':
-        sortedProducts.sort((a, b) => new Date(b.releaseDate) - new Date(a.releaseDate));
-        break;
-      case 'alphabeticalAZ':
-        sortedProducts.sort((a, b) => a.productName.localeCompare(b.productName));
-        break;
-      case 'alphabeticalZA':
-        sortedProducts.sort((a, b) => b.productName.localeCompare(a.productName));
-        break;
-      default:
-        sortedProducts.sort((a, b) => b.popularity - a.popularity);
-    }
-    setFilteredProducts(sortedProducts);
-  };
-
-  const indexOfLastProduct = currentPage * productsPerPage;
-  const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
-  const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
-
-  const paginate = (pageNumber) => setCurrentPage(pageNumber);
-
-
-
 
   const handleWishlist = async (productId) => {
+    const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
 
-    const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken")
-
-    const wishlistData = { token, productId }
-
-    console.log("wishlist data", wishlistData);
-
+    const wishlistData = { token, productId };
 
     try {
-
-      const wishlistResponse = await axiosClient.post('/wishlist', wishlistData)
-
-      console.log("wishlist response  :", wishlistResponse);
-
-      toast.success("product added to the wishlist")
-
-
+      const wishlistResponse = await axiosClient.post("/wishlist", wishlistData);
+      toast.success("Product added to the wishlist");
     } catch (error) {
-
-      toast.success("product already added to the wishlist")
-      console.log(error)
-
+      toast.error("Product already added to the wishlist");
+      console.log(error);
     }
-
-  }
-
-  const [searchTerm, setSearchTerm] = useState("");
-
-  useEffect(() => {
-    handleSearch();
-  }, [searchTerm]);
-
-  const handleSearch = () => {
-    const searchedProducts = productDetails.filter(product =>
-      product.productName.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    setFilteredProducts(searchedProducts);
   };
-
-
-
-
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -158,21 +90,18 @@ const CategoryPage = () => {
           <aside className="w-full lg:w-1/4 bg-white shadow-lg rounded-lg p-4">
             <h2 className="text-lg font-semibold mb-4">Filters</h2>
             <div className="mb-4">
-              <label htmlFor="filter" className="block mb-2 font-medium">
+              <label htmlFor="sort" className="block mb-2 font-medium">
                 Sort by:
               </label>
               <select
-                id="filter"
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
+                id="sort"
+                value={sort}
+                onChange={(e) => setSort(e.target.value)}
                 className="w-full p-2 border rounded"
               >
-                {/* <option value="popularity">Popularity</option> */}
+                <option value="">None</option>
                 <option value="priceLowHigh">Price: Low to High</option>
                 <option value="priceHighLow">Price: High to Low</option>
-                {/* <option value="averageRating">Average Ratings</option> */}
-                {/* <option value="featured">Featured</option> */}
-                {/* <option value="newArrivals">New Arrivals</option> */}
                 <option value="alphabeticalAZ">aA - zZ</option>
                 <option value="alphabeticalZA">zZ - aA</option>
               </select>
@@ -192,7 +121,6 @@ const CategoryPage = () => {
             </div>
           </aside>
 
-
           {/* Product Grid */}
           <main className="w-full lg:w-3/4">
             <h1 className="text-2xl font-bold mb-4 capitalize">{categoryname}</h1>
@@ -202,14 +130,14 @@ const CategoryPage = () => {
               animate="visible"
               variants={{
                 hidden: { opacity: 0 },
-                visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+                visible: { opacity: 1, transition: { staggerChildren: 0.1 } },
               }}
             >
-              {currentProducts.map((product, index) => (
+              {productDetails.map((product, index) => (
                 <motion.div
-                  key={product.id}
+                  key={product._id}
                   className="bg-white border cursor-pointer p-4 rounded-lg shadow-lg hover:shadow-xl transition-shadow flex flex-col md:flex-row items-center relative"
-                  onClick={() => handleProductDetails(product._id)}
+                  onClick={() => navigate(`/product/${product._id}`)}
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
@@ -227,7 +155,7 @@ const CategoryPage = () => {
                     <p className="text-sm text-gray-500 mb-2">{product.description}</p>
                     <p className="font-bold text-lg text-orange-500">₹{product.price}</p>
                   </div>
-                  {console.log(product._id)}
+
                   {/* Wishlist Icon */}
                   <button
                     onClick={(e) => {
@@ -252,7 +180,6 @@ const CategoryPage = () => {
                     </svg>
                   </button>
                 </motion.div>
-
               ))}
             </motion.div>
           </main>
@@ -268,11 +195,13 @@ const CategoryPage = () => {
       >
         <nav>
           <ul className="flex gap-4 items-center -space-x-px">
-            {Array.from({ length: Math.ceil(filteredProducts.length / productsPerPage) }, (_, index) => (
+            {Array.from({ length: totalPages }, (_, index) => (
               <motion.li key={index}>
                 <button
-                  onClick={() => paginate(index + 1)}
-                  className={`px-3 py-2 leading-tight rounded-lg ${currentPage === index + 1 ? 'bg-orange-500 text-white' : 'bg-white text-blue-500'} border border-gray-300 hover:bg-orange-500 hover:text-white`}
+                  onClick={() => setCurrentPage(index + 1)}
+                  className={`px-3 py-2 leading-tight rounded-lg ${
+                    currentPage === index + 1 ? "bg-orange-500 text-white" : "bg-white text-blue-500"
+                  } border border-gray-300 hover:bg-orange-500 hover:text-white`}
                 >
                   {index + 1}
                 </button>
@@ -286,4 +215,3 @@ const CategoryPage = () => {
 };
 
 export default CategoryPage;
-

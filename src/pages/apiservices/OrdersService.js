@@ -14,11 +14,13 @@ export const fetchOrders = async (token) => {
 
 
 // Cancel an order
-export const cancelOrder = async (token, orderId, quantity) => {
+export const cancelOrder = async (token, orderId, quantity , totalprice , paymentmethod) => {
   const response = await axiosClient.post("/cancelorder", {
     token,
     orderId,
     quantity,
+    totalprice,
+    paymentmethod
   });
   return response.data; 
 };
