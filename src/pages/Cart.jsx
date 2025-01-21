@@ -45,35 +45,57 @@ const Cart = () => {
         calculateTotalPrice();
     }, [cartItems, discount]);
 
+   
+
     const fetchCartDetails = async (token) => {
         try {
             const response = await axiosClient.post('/cart', { token });
             console.log("response again : ", response);
-
+    
             const cartData = response.data.cartData[0]?.items || [];
             setCartItems(cartData);
-
+    
             // Calculate discount
             let discountValue = 0;
-            cartData.forEach(item => {
+            cartData.forEach((item) => {
                 const categoryDiscount = item.productId.categoryId?.discount;
+                const productOffer = item.productId.productOffer;
+    
+                let productDiscountValue = 0;
+                let categoryDiscountValue = 0;
+    
+                // Calculate product-level discount
+                if (productOffer) {
+                    const { type, value } = productOffer;
+                    if (type === "flat") {
+                        productDiscountValue = value * item.quantity; // Flat product discount
+                    } else if (type === "percentage") {
+                        productDiscountValue = (value / 100) * item.productId.price * item.quantity; // Percentage product discount
+                    }
+                }
+    
+                // Calculate category-level discount
                 if (categoryDiscount) {
                     const { type, value } = categoryDiscount;
                     if (type === "flat") {
-                        discountValue += value * item.quantity; // Flat discount
+                        categoryDiscountValue = value * item.quantity; // Flat category discount
                     } else if (type === "percentage") {
-                        discountValue += (value / 100) * item.productId.price * item.quantity; // Percentage discount
+                        categoryDiscountValue = (value / 100) * item.productId.price * item.quantity; // Percentage category discount
                     }
                 }
+    
+                // Use the higher discount between product and category
+                discountValue += Math.max(productDiscountValue, categoryDiscountValue);
             });
-
+    
             setDiscount(discountValue); // Update discount state
             localStorage.setItem('cartDiscount', JSON.stringify(discountValue)); // Persist discount in localStorage
         } catch (error) {
             console.error('Error fetching cart details:', error);
         }
     };
-
+    
+    
     const handleIncrement = async (id, quantity, token) => {
         try {
             console.log("Product ID:", id);
@@ -81,24 +103,53 @@ const Cart = () => {
             console.log("Token:", token);
 
             if (quantity > 2) return;
+    
+            // Find the product in the cart
+            const product = cartItems.find(item => item.productId._id === id);
+    
+            // Check if the product exists and get its stock quantity
+            if (product) {
+                const stockQuantity = product.productId.quantity;
 
-            const newQuantity = quantity + 1;
-            const quantityResponse = await axiosClient.post('/cartincrement', { token, quantity: newQuantity, id });
-            console.log(quantityResponse);
-
-            fetchCartDetails(tok)
-
-            setCartItems(prevItems =>
-                prevItems.map(item =>
-                    item.productId._id === id ? { ...item, quantity: newQuantity } : item
-                )
-            );
-
-           
+                if (stockQuantity === 0) {
+                    await handleRemove(id, token);
+                }
+    
+                // If the quantity is 1 or higher than available stock, don't increase
+                if (quantity >= stockQuantity) {
+                    console.warn('Cannot increase quantity beyond available stock');
+                    return;
+                }
+    
+                // Increment the quantity
+                const newQuantity = quantity + 1;
+    
+                // If the new quantity is greater than 0 and the stock is sufficient, update cart
+                if (newQuantity > 0) {
+                    const quantityResponse = await axiosClient.post('/cartincrement', { token, quantity: newQuantity, id });
+                    console.log(quantityResponse);
+    
+                    fetchCartDetails(tok);
+    
+                    setCartItems(prevItems =>
+                        prevItems.map(item =>
+                            item.productId._id === id ? { ...item, quantity: newQuantity } : item
+                        )
+                    );
+                }
+            }
+    
+            // If the quantity in the cart is 0 and stock is 0, remove the item
+            if (quantity === 0) {
+                await handleRemove(id, token);
+            }
+            
         } catch (error) {
             console.error('Error incrementing cart item quantity:', error);
         }
     };
+    
+    
 
     const handleDecrement = async (id, quantity, token) => {
         try {

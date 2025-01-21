@@ -14,9 +14,16 @@ const CategoryPage = () => {
   const [cat, setCat] = useState("");
   const [sort, setSort] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
+  
+  
+  
+
+
+  
+
 
   const navigate = useNavigate();
-  const productsPerPage = 3; // Limit for products per page
+  const productsPerPage = 6; // Limit for products per page
 
   useEffect(() => {
     fetchCategoryDetails();
@@ -37,8 +44,9 @@ const CategoryPage = () => {
       setProductDetails(productDetails);
       setTotalPages(totalPages);
       if (productDetails.length > 0) {
-        setCat(productDetails[0].categoryId.categoryName);
+        setCat(categoryname)
       }
+
     } catch (error) {
       console.log(error);
       navigate("*");

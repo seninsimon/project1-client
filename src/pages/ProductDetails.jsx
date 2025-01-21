@@ -34,6 +34,11 @@ const ProductDetails = () => {
         type: null
     })
 
+    const [productDiscount, setProductDiscount] = useState({
+        value: 0,
+        type: null
+    })
+
     const [reviews, setReviews] = useState([
         { name: "John Doe", comment: "Excellent product!", rating: 5 },
         { name: "Jane Smith", comment: "Good quality, fast delivery.", rating: 4 },
@@ -63,6 +68,7 @@ const ProductDetails = () => {
 
     useEffect(() => {
         fetchOfferData()
+        fetchProductOffer()
     }, [])
 
     const [categoryProduct, setCategoryProduct] = useState([]);
@@ -84,20 +90,31 @@ const ProductDetails = () => {
 
     const fetchOfferData = async () => {
         try {
-
-            const offerresponse = await axiosClient.post(`/offerforcategory/${id}`)
-            console.log("offer response :", offerresponse);
+            const offerresponse = await axiosClient.post(`/offerforcategory/${id}`);
+            console.log("Category offer response:", offerresponse);
             setDiscount({
-                ...discount, value: offerresponse.data.categoryDiscount.value,
-                type: offerresponse.data.categoryDiscount.type
-            })
-
+                value: offerresponse.data.categoryDiscount?.value || 0,
+                type: offerresponse.data.categoryDiscount?.type || null,
+            });
         } catch (error) {
-            console.log(error);
-
+            console.error("Error fetching category discount:", error);
         }
+    };
 
-    }
+    const fetchProductOffer = async () => {
+        try {
+            const offerresponse = await axiosClient.get(`/productoffer/${id}`);
+            console.log("Product offer response:", offerresponse);
+            setProductDiscount({
+                value: offerresponse.data.productOffer?.value || 0,
+                type: offerresponse.data.productOffer?.type || null,
+            });
+        } catch (error) {
+            console.error("Error fetching product discount:", error);
+        }
+    };
+
+
 
 
     const categoryFilter = categoryProduct.filter((pro) => {
@@ -176,6 +193,51 @@ const ProductDetails = () => {
         hidden: { opacity: 0, x: -50 },
         visible: { opacity: 1, x: 0, transition: { duration: 0.6 } },
     };
+
+    const finalPrice = () => {
+        const productDiscountPrice = productDiscount?.type === 'flat'
+            ? product.price - productDiscount.value
+            : product.price - (product.price * productDiscount.value) / 100;
+
+        const categoryDiscountPrice = discount?.type === 'flat'
+            ? product.price - discount.value
+            : product.price - (product.price * discount.value) / 100;
+
+        const bestPrice = Math.min(productDiscountPrice, categoryDiscountPrice);
+
+        return Math.max(0, isFinite(bestPrice) ? bestPrice : product.price); // Ensure price doesn't go negative
+    };
+
+
+    useEffect(() => {
+        const fetchProductDetailsAndOffers = async () => {
+            try {
+                const data = await productService.fetchProductDetails(id);
+                setProducts(data);
+    
+                // Fetch product-specific offer
+                const productOfferResponse = await axiosClient.get(`/productoffer/${id}`);
+                setProductDiscount({
+                    value: productOfferResponse.data.productOffer?.value || 0,
+                    type: productOfferResponse.data.productOffer?.type || null,
+                });
+    
+                // Fetch category-specific offer
+                const categoryOfferResponse = await axiosClient.post(`/offerforcategory/${id}`);
+                setDiscount({
+                    value: categoryOfferResponse.data.categoryDiscount?.value || 0,
+                    type: categoryOfferResponse.data.categoryDiscount?.type || null,
+                });
+            } catch (error) {
+                console.error("Error fetching product details or offers:", error);
+                navigate('*'); // Navigate to error page
+            }
+        };
+    
+        fetchProductDetailsAndOffers();
+    }, [id, navigate]);
+    
+
 
     return (
         <>
@@ -267,16 +329,9 @@ const ProductDetails = () => {
                         <p className="mt-4 text-lg text-gray-700 w-96">{product.description}</p>
                         <div className="mt-6 flex items-center space-x-4">
                             <span className="text-2xl font-semibold text-green-600">
-                                ₹
-                                {
-                                    discount?.type
-                                        ? (discount.type === 'flat'
-                                            ? Math.max(0, product.price - discount.value) // Flat discount
-                                            : Math.max(0, product.price - (product.price * discount.value) / 100)) // Percentage discount
-                                        : product?.price // No discount
-                                }
+                                ₹{finalPrice()}
                                 <span className="text-base text-gray-600 line-through ml-5">
-                                ₹{discount.value == 0 ? "18000  " : product.price} {/* Show original price only if discount is applied */}
+                                    ₹{product.price} {/* Show original price only if discount is applied */}
                                 </span>
                             </span>
 
@@ -404,5 +459,19 @@ const ProductDetails = () => {
 };
 
 export default ProductDetails;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

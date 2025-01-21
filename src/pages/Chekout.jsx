@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
@@ -15,18 +16,17 @@ const Checkout = () => {
         pincode: '',
         state: ''
     });
-    const [paymentMethod, setPaymentMethod] = useState('cash_on_delivery');
+    const [paymentMethod, setPaymentMethod] = useState('online_payment');
     const [errors, setErrors] = useState({});
     const [couponCode, setCouponCode] = useState('');
     const [discount, setDiscount] = useState(0);
     const [finalPrice, setFinalPrice] = useState(0);
-    const [appliedCoupon, setAppliedCoupon] = useState(null);
+    const [selectedCoupon, setSelectedCoupon] = useState(null);
+    const [coupons, setCoupons] = useState([]);
     const navigate = useNavigate();
     const location = useLocation();
-    const [apply, setapply] = useState(false)
 
     const { totalPrice, cartItems } = location.state;
-    console.log("cart items and discount : ", cartItems);
 
     useEffect(() => {
         const confirmtoken = localStorage.getItem("orderconfirmed")
@@ -74,17 +74,14 @@ const Checkout = () => {
     const handleAddAddress = async () => {
         const validationErrors = {};
 
-        // Validate full name
         if (newAddress.fullName.length < 3) {
             validationErrors.fullName = 'Full Name must be at least 3 characters.';
         }
 
-        // Validate phone number
         if (!/^\d{10}$/.test(newAddress.phoneNumber)) {
             validationErrors.phoneNumber = 'Phone number must be 10 digits.';
         }
 
-        // Validate other required fields
         if (!newAddress.address || !newAddress.city || !newAddress.state || !newAddress.pincode) {
             validationErrors.address = 'All fields must be filled.';
         }
@@ -122,6 +119,7 @@ const Checkout = () => {
         setPaymentMethod(e.target.value);
     };
 
+    // Updated handleConfirmOrder with coupon logic
     const handleConfirmOrder = async () => {
         if (!selectedAddress) {
             toast.error('Please select an address.');
@@ -129,15 +127,35 @@ const Checkout = () => {
         }
 
         const token = localStorage.getItem('usertoken') || localStorage.getItem('authToken');
+        const orderData = {
+            token,
+            cartItems,
+            totalPrice: finalPrice,
+            addressId: selectedAddress,
+            paymentMethod,
+            appliedCoupon: selectedCoupon ? selectedCoupon.code : null,
+
+
+        };
 
         if (paymentMethod === 'online_payment') {
+
+
+            const retrydata = {
+                token,
+                cartItems,
+                totalPrice: finalPrice,
+                addressId: selectedAddress,
+                paymentMethod,
+                appliedCoupon: selectedCoupon ? selectedCoupon.code : null,
+                status: "payment_pending"
+            }
+
+
+
             try {
-                const amount = finalPrice * 100 // Razorpay expects amount in paise
-
+                const amount = (finalPrice + 50) * 100;
                 const { data } = await axiosClient.post('/create-razorpay-order', { amount });
-
-                console.log("data key", data);
-
 
                 if (!window.Razorpay) {
                     toast.error('Payment gateway not available.');
@@ -153,15 +171,10 @@ const Checkout = () => {
                     order_id: data.orderId,
                     handler: async function (response) {
                         const paymentData = {
+                            ...orderData,
                             razorpayPaymentId: response.razorpay_payment_id,
                             razorpayOrderId: response.razorpay_order_id,
                             razorpaySignature: response.razorpay_signature,
-                            token,
-                            cartItems,
-                            totalPrice: finalPrice,
-                            addressId: selectedAddress,
-                            paymentMethod,
-                            appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
                         };
 
                         try {
@@ -169,6 +182,7 @@ const Checkout = () => {
                             localStorage.setItem('orderconfirmed', confirmResponse.data.message);
                             navigate('/ordersuccessfull');
                         } catch (error) {
+
                             console.error('Payment confirmation failed:', error);
                             toast.error('Payment confirmation failed. Please contact support.');
                         }
@@ -184,24 +198,71 @@ const Checkout = () => {
                 };
 
                 const razorpay = new window.Razorpay(options);
+
+
+                razorpay.on('payment.failed', async function (response) {
+                    console.error('Payment failed:', response);
+
+                    const failureData = {
+                        ...retrydata,
+                        error: {
+                            code: response.error.code,
+                            description: response.error.description,
+                            source: response.error.source,
+                            step: response.error.step,
+                            reason: response.error.reason,
+                        },
+                    };
+
+                    try {
+                        // Post the failure data to the backend
+                        const confirmResponse = await axiosClient.post('/confirm-razorpay-payment', failureData);
+
+                        toast.error('Payment failed. Details recorded.');
+
+                    } catch (error) {
+                        console.error('Failed to record payment failure:', error);
+                        toast.error('Payment failed. Unable to record failure details.');
+
+                    }
+                });
                 razorpay.open();
+
+
+
             } catch (error) {
                 console.error('Error during online payment:', error);
                 toast.error('Payment failed. Please try again.');
+
             }
-        } else {
+
+        }
+        
+        else if (paymentMethod === 'wallet')
+        {
+           try {
+
+            const response = await axiosClient.post('/orderconfirm', orderData);
+            console.log("wallet purchace",orderData)
+            console.log("wallet response", response);
+            
+            localStorage.setItem("orderconfirmed", response.data.message);
+            navigate('/ordersuccessfull');
+            
+           } catch (error) {
+            console.error('Error confirming order:', error);
+                toast.error('Order confirmation failed due to insufficient balance.');
+           }
+        }
+        
+        
+        
+        else {
             try {
-                const allData = {
-                    token,
-                    cartItems,
-                    totalPrice: finalPrice,
-                    addressId: selectedAddress,
-                    paymentMethod,
-                    appliedCoupon: appliedCoupon ? appliedCoupon.code : null,
-                };
-                const response = await axiosClient.post('/orderconfirm', allData);
+                const response = await axiosClient.post('/orderconfirm', orderData);
                 localStorage.setItem("orderconfirmed", response.data.message);
                 navigate('/ordersuccessfull');
+
             } catch (error) {
                 console.error('Error confirming order:', error);
                 toast.error('Order confirmation failed.');
@@ -209,48 +270,36 @@ const Checkout = () => {
         }
     };
 
-
     useEffect(() => {
         fetchCoupons()
     }, [])
 
-
-    const [coupons, setCoupons] = useState([])
-
     const fetchCoupons = async () => {
         try {
-
             const response = await axiosClient.get("/fetchcoupons")
-            console.log(response)
             setCoupons(response.data.coupons)
-
-
-
         } catch (error) {
             console.log(error);
-
         }
     }
 
+    // Updated coupon handling functions
     const handleApplyCoupon = async () => {
-
-        setapply(true)
-
         if (!couponCode) {
             toast.error('Please enter a coupon code.');
             return;
         }
 
-
-
         try {
             const response = await axiosClient.post('/couponapply', { couponCode, totalPrice });
 
             if (response.data.success) {
+                setSelectedCoupon({
+                    code: couponCode.toUpperCase(),
+                    discount: response.data.discount
+                });
                 setDiscount(response.data.discount);
-                setFinalPrice(response.data.discountedPrice);
-                setAppliedCoupon({ code: couponCode.toUpperCase() });
-                toast.success('Coupon applied successfully!');
+                toast.success('Coupon selected successfully!');
             } else {
                 toast.error(response.data.message);
             }
@@ -258,6 +307,13 @@ const Checkout = () => {
             console.error('Error applying coupon:', error);
             toast.error(error.response?.data?.message || 'Failed to apply coupon.');
         }
+    };
+
+    const handleRemoveCoupon = () => {
+        setSelectedCoupon(null);
+        setCouponCode('');
+        setDiscount(0);
+        toast.success('Coupon removed successfully!');
     };
 
     const indianStates = [
@@ -277,9 +333,8 @@ const Checkout = () => {
                 <div className="max-w-7xl mx-auto px-4">
                     <h1 className="text-3xl font-semibold text-gray-800 mb-6">Checkout</h1>
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        {/* **Address and Payment Section** */}
                         <div className="lg:col-span-2 bg-white shadow-lg rounded-lg p-6 space-y-4">
-                            {/* **Select Address** */}
+                            {/* Address Selection Section */}
                             <div>
                                 <h2 className="text-lg font-semibold mb-2">Select Address:</h2>
                                 <div className="grid gap-4 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
@@ -316,8 +371,7 @@ const Checkout = () => {
                                 </div>
                             </div>
 
-
-                            {/* **Manage Addresses Button** */}
+                            {/* Manage Addresses Button */}
                             <div className="flex justify-center items-center py-4">
                                 <a href="/user/address">
                                     <button className="px-6 py-3 bg-green-500 text-white rounded-lg shadow-md hover:bg-green-600 hover:shadow-lg transition-transform transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-400">
@@ -326,7 +380,7 @@ const Checkout = () => {
                                 </a>
                             </div>
 
-                            {/* **Add New Address Form** */}
+                            {/* Add New Address Form */}
                             <div>
                                 <h2 className="text-lg font-semibold mb-2">Add New Address:</h2>
                                 <div className="space-y-2">
@@ -398,9 +452,11 @@ const Checkout = () => {
                                 </div>
                             </div>
 
-                            {/* **Payment Method Selection** */}
+                            {/* Payment Method Selection */}
                             <div>
                                 <h2 className="text-lg font-semibold mb-2">Payment Method:</h2>
+
+                                {/* Cash on Delivery Option */}
                                 <label className="flex items-center space-x-2 mb-2">
                                     <input
                                         type="radio"
@@ -408,9 +464,19 @@ const Checkout = () => {
                                         value="cash_on_delivery"
                                         checked={paymentMethod === 'cash_on_delivery'}
                                         onChange={handlePaymentChange}
+                                        disabled={finalPrice > 1000}  // Disable if final price is greater than ₹1000
                                     />
                                     <span>Cash on Delivery</span>
                                 </label>
+
+                                {/* Conditional message if final price is greater than ₹1000 */}
+                                {finalPrice > 1000 && (
+                                    <p className="text-sm text-red-600">
+                                        Cash on Delivery is not available for orders above ₹1000
+                                    </p>
+                                )}
+
+                                {/* Online Payment Option */}
                                 <label className="flex items-center space-x-2 mb-2">
                                     <input
                                         type="radio"
@@ -421,33 +487,59 @@ const Checkout = () => {
                                     />
                                     <span>Online Payment</span>
                                 </label>
+
+                                {/* Wallet Option */}
+                                <label className="flex items-center space-x-2 mb-2">
+                                    <input
+                                        type="radio"
+                                        name="paymentMethod"
+                                        value="wallet"
+                                        checked={paymentMethod === 'wallet'}
+                                        onChange={handlePaymentChange}
+                                    />
+                                    <span>Wallet</span>
+                                </label>
                             </div>
 
-                            {/* **Apply Coupon Section** */}
+
+                            {/* Updated Apply Coupon Section */}
                             <div>
                                 <h2 className="text-lg font-semibold mb-2">Apply Coupon:</h2>
-                                <div className="flex space-x-2">
-                                    <input
-                                        type="text"
-                                        value={couponCode}
-                                        onChange={(e) => setCouponCode(e.target.value)}
-                                        placeholder="Enter coupon code"
-                                        className="w-full p-2 border border-gray-300 rounded-lg"
-                                        disabled={apply}
-                                    />
-                                    <button
-                                        onClick={handleApplyCoupon}
-                                        className={`px-4 py-2 rounded-lg text-white ${apply ? "bg-gray-400 cursor-not-allowed" : "bg-blue-500 hover:bg-blue-600"
-                                            }`}
-                                        disabled={apply}
-                                    >
-                                        Apply
-                                    </button>
+                                <div className="space-y-2">
+                                    <div className="flex space-x-2">
+                                        <input
+                                            type="text"
+                                            value={couponCode}
+                                            onChange={(e) => setCouponCode(e.target.value)}
+                                            placeholder="Enter coupon code"
+                                            className="w-full p-2 border border-gray-300 rounded-lg"
+                                            disabled={selectedCoupon !== null}
+                                        />
+                                        {!selectedCoupon ? (
+                                            <button
+                                                onClick={handleApplyCoupon}
+                                                className="px-4 py-2 rounded-lg text-white bg-blue-500 hover:bg-blue-600"
+                                            >
+                                                Apply
+                                            </button>
+                                        ) : (
+                                            <button
+                                                onClick={handleRemoveCoupon}
+                                                className="px-4 py-2 rounded-lg text-white bg-red-500 hover:bg-red-600"
+                                            >
+                                                Remove
+                                            </button>
+                                        )}
+                                    </div>
+                                    {selectedCoupon && (
+                                        <div className="text-sm text-green-600">
+                                            Coupon {selectedCoupon.code} selected! Discount: ₹{selectedCoupon.discount}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-
-                            {/* **Price Summary** */}
+                            {/* Price Summary */}
                             <div className="border-t pt-4 space-y-2">
                                 {discount > 0 && (
                                     <div className="flex justify-between items-center">
@@ -455,13 +547,16 @@ const Checkout = () => {
                                         <p className="text-lg font-semibold text-green-600">-₹{discount}</p>
                                     </div>
                                 )}
+                                <p className="text-lg font-semibold text-gray-800">Delivery charge : 50/- </p>
+
                                 <div className="flex justify-between items-center">
+
                                     <p className="text-lg font-semibold text-gray-800">Final Price:</p>
-                                    <p className="text-lg font-semibold text-green-600">₹{finalPrice}</p>
+                                    <p className="text-lg font-semibold text-green-600">₹{finalPrice + 50}</p>
                                 </div>
                             </div>
 
-                            {/* **Confirm Order Button** */}
+                            {/* Confirm Order Button */}
                             <button
                                 onClick={handleConfirmOrder}
                                 disabled={!selectedAddress}
@@ -471,7 +566,7 @@ const Checkout = () => {
                             </button>
                         </div>
 
-                        {/* **Cart Summary Section** */}
+                        {/* Cart Summary Section */}
                         <div className="bg-white shadow-lg rounded-lg p-6 space-y-6">
                             <h2 className="text-2xl font-semibold border-b pb-4 text-gray-800">Cart Summary</h2>
                             <ul className="space-y-4 divide-y divide-gray-200">
@@ -498,7 +593,7 @@ const Checkout = () => {
                                 </div>
                             </div>
 
-                            {/* Coupon Code Section */}
+                            {/* Available Coupons Section */}
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
                                 <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Coupons:</h3>
                                 <ul className="space-y-2">
@@ -508,14 +603,12 @@ const Checkout = () => {
                                             className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow"
                                         >
                                             <span className="font-medium text-gray-700">{cop.code}</span>
-                                            <span className="font-medium text-gray-700"> discount : ₹{cop.discount}</span>
+                                            <span className="font-medium text-gray-700">discount : ₹{cop.discount}</span>
                                         </li>
                                     ))}
                                 </ul>
                             </div>
                         </div>
-
-
                     </div>
                 </div>
             </div>
