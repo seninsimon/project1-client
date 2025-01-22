@@ -149,6 +149,7 @@ const ProductDetails = () => {
             const response = await cartService.addToCart(id, token);
             console.log("Add to cart response:", response);
             toast.success("Product added to cart");
+            navigate("/cart")
         } catch (error) {
             console.error("Error in add to cart:", error);
             toast.success("product already added")
@@ -340,14 +341,14 @@ const ProductDetails = () => {
                         <div className="mt-8 flex items-center space-x-4">
                             {
                                 product.quantity >= 1 ? (
-                                    <a href="/cart">
+                                   
                                         <button
                                             className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
                                             onClick={addToCart}
                                         >
                                             Add to Cart
                                         </button>
-                                    </a>
+                                   
                                 ) : (
                                     <button className="px-6 py-3 bg-gray-400 text-white rounded-lg cursor-not-allowed" disabled>
                                         Add to Cart

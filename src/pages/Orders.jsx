@@ -28,8 +28,7 @@ const Orders = () => {
     fetchUserOrders();
   }, []);
 
-  // Fetch orders
-  // Fetch orders
+ 
   const fetchUserOrders = async () => {
     try {
       const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
@@ -442,12 +441,12 @@ const Orders = () => {
                       )}
 
                       {/* Show disabled button if the product has already been returned */}
-                      {product.isProductReturned && (
+                      {product.isProductReturned &&  (
                         <button
                           disabled
                           className="mt-2 py-1 px-4 bg-gray-300 text-gray-500 cursor-not-allowed rounded-lg"
                         >
-                          Product Returned
+                          {product.returning ? "product returned" : "product return requested"} 
                         </button>
                       )}
                     </div>

@@ -103,11 +103,11 @@ const ZenztoreNav = () => {
             <div className="container mx-auto px-4 py-3 flex items-center justify-between">
                 {/* Logo */}
                 <div className="flex items-center cursor-pointer">
-                    <a href="/zenztore">
+                    <Link to="/zenztore">
                         <div className="bg-white text-orange-500 font-extrabold text-2xl px-3 py-1 rounded-lg shadow-md">
                             Z
                         </div>
-                    </a>
+                    </Link>
                 </div>
 
                 {/* Search Bar */}
