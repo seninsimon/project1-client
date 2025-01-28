@@ -3,7 +3,6 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import axiosClient from '../api/axiosClient';
 import ZenztoreNav from '../components/ZenztoreNav';
-import './ProductDetails.css';
 import { toast } from 'react-toastify';
 import CategoryNav from '../components/CategoryNav';
 import { productService, homepageService, cartService } from './apiservices/ProductDetailsService';
