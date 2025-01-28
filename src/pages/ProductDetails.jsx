@@ -148,8 +148,9 @@ const ProductDetails = () => {
         try {
             const response = await cartService.addToCart(id, token);
             console.log("Add to cart response:", response);
-            toast.success("Product added to cart");
+            
             navigate("/cart")
+            toast.success("Product added to cart");
         } catch (error) {
             console.error("Error in add to cart:", error);
             toast.success("product already added")

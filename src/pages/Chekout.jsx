@@ -594,20 +594,23 @@ const Checkout = () => {
                             </div>
 
                             {/* Available Coupons Section */}
+                            {totalPrice > 1500 ?
                             <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-                                <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Coupons:</h3>
-                                <ul className="space-y-2">
-                                    {coupons.map((cop) => (
-                                        <li
-                                            key={cop.code}
-                                            className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                        >
-                                            <span className="font-medium text-gray-700">{cop.code}</span>
-                                            <span className="font-medium text-gray-700">discount : ₹{cop.discount}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
+                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Coupons:</h3>
+                            <ul className="space-y-2">
+                                {coupons.map((cop) => (
+                                    <li
+                                        key={cop.code}
+                                        className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow"
+                                    >
+                                        <span className="font-medium text-gray-700">{cop.code}</span>
+                                        <span className="font-medium text-gray-700">discount : ₹{cop.discount}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div> : <p className="text-gray-700">Coupons are available for purchases over ₹1500.</p>
+
+                            }
                         </div>
                     </div>
                 </div>

@@ -1,5 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from 'axios'
+import axiosClient from "../../api/axiosClient";
 
 
 
@@ -7,7 +8,7 @@ export const googleLoginThunk = createAsyncThunk(
     "googleLogin/googleLoginThunk",
     async (credentials, { rejectWithValue }) => {
         try {
-            const response = await axios.post("http://localhost:3000/googleauth", { credentials });
+            const response = await axiosClient.post("/googleauth", { credentials });
             return response.data; // Return backend response
         } catch (error) {
             return rejectWithValue(error.response.data || error.message); // Handle errors

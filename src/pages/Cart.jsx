@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import ZenztoreNav from '../components/ZenztoreNav';
+import { toast } from 'react-toastify';
 
 const Cart = () => {
     const navigate = useNavigate();
@@ -102,7 +103,11 @@ const Cart = () => {
             console.log("Quantity:", quantity);
             console.log("Token:", token);
 
-            if (quantity > 2) return;
+            if (quantity > 2) 
+            {
+                toast.error('limit is 3 quantity');
+                return
+            }
     
             // Find the product in the cart
             const product = cartItems.find(item => item.productId._id === id);
@@ -117,7 +122,7 @@ const Cart = () => {
     
                 // If the quantity is 1 or higher than available stock, don't increase
                 if (quantity >= stockQuantity) {
-                    console.warn('Cannot increase quantity beyond available stock');
+                    toast.error('Maximum quantity reached');
                     return;
                 }
     

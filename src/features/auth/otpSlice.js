@@ -1,9 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from 'axios';
+import axiosClient from "../../api/axiosClient";
 
 export const otpThunk = createAsyncThunk("otp/otpThunk", async (otpData, { rejectWithValue }) => {
     try {
-        const response = await axios.post("http://localhost:3000/verifyotp", { otpData });
+        const response = await axiosClient.post("/verifyotp", { otpData });
         console.log("response from server : ", response);
         localStorage.setItem("usertoken",response.data.usertoken)
     } catch (error) {

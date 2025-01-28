@@ -55,6 +55,7 @@ const CategoryPage = () => {
 
   const handleWishlist = async (productId) => {
     const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
+    
 
     const wishlistData = { token, productId };
 

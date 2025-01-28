@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import axiosClient from '../api/axiosClient';
 import { useNavigate } from 'react-router-dom';
-
+import { cartService } from './apiservices/ProductDetailsService';
+import { toast } from 'react-toastify';
 
 const Wishlist = () => {
   const [wishlistProducts, setWishlistProducts] = useState([]);
@@ -51,6 +52,18 @@ const Wishlist = () => {
     }
   };
 
+  const addToCart = async (id) => {
+    try {
+      const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
+      await cartService.addToCart(id, token);
+      toast.success("product added to the cart")
+      
+    } catch (error) {
+      toast.success("product already added to the cart")
+      console.error("Error adding product to cart:", error);
+    }
+  };
+
   return (
     <div className="p-6">
       <h2 className="text-2xl font-semibold mb-6 text-center">Your Wishlist</h2>
@@ -72,6 +85,12 @@ const Wishlist = () => {
               <div className="w-full text-center mt-4">
                 {/* <p className="font-bold text-orange-500 text-lg">₹{product.price}</p> */}
               </div>
+              <button
+                onClick={() => addToCart(product.id)}
+                className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition mt-2"
+              >
+                Add to Cart
+              </button>
               <button
                 onClick={() => removeFromWishlist(product.id)}
                 className="w-full px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition mt-2"

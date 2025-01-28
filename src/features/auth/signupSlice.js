@@ -1,9 +1,10 @@
 import { createAsyncThunk , createSlice, isRejected } from "@reduxjs/toolkit";
 import axios from 'axios';
+import axiosClient from "../../api/axiosClient";
 
 export const signupThunk = createAsyncThunk("signup/signupThunk" , async (signupData , {rejectWithValue}) => {
     try {
-        const response = await axios.post("http://localhost:3000/signup", signupData);
+        const response = await axiosClient.post("/signup", signupData);
 
         console.log("response from server : ", response);
         console.log(response.data.message);

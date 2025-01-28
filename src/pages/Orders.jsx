@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { fetchOrders, cancelOrder } from './apiservices/OrdersService';
 import { toast } from "react-toastify";
@@ -14,8 +13,12 @@ const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [paginatedOrders, setPaginatedOrders] = useState([]);
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState(null);
+  const [productToReturn, setProductToReturn] = useState(null);
   const [quantityToCancel, setQuantityToCancel] = useState(0);
+  const [cancelReason, setCancelReason] = useState("");
+  const [returnReason, setReturnReason] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const ordersPerPage = 12;
   const [totalPrice, setTotalPrice] = useState(0)
@@ -59,11 +62,16 @@ const Orders = () => {
 
   // Handle order cancellation
   const handleCancelOrder = async (totprice) => {
+    if (!cancelReason.trim()) {
+      toast.error("Please provide a reason for cancellation.");
+      return;
+    }
+
     console.log("total price :", totprice);
 
     try {
       const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
-      await cancelOrder(token, orderToCancel, quantityToCancel, totprice, paymentmethod);
+      await cancelOrder(token, orderToCancel, quantityToCancel, totprice, paymentmethod, cancelReason);
 
       // Update orders and paginatedOrders states
       setOrders((prevOrders) =>
@@ -102,34 +110,42 @@ const Orders = () => {
     setIsConfirmModalOpen(false);
     setOrderToCancel(null);
     setQuantityToCancel(0);
+    setCancelReason(""); // Reset cancel reason
+  };
+
+  // Open return modal
+  const openReturnModal = (productId, orderId) => {
+    setProductToReturn({ productId, orderId });
+    setIsReturnModalOpen(true);
+  };
+
+  // Close return modal
+  const closeReturnModal = () => {
+    setIsReturnModalOpen(false);
+    setProductToReturn(null);
+    setReturnReason(""); // Reset return reason
   };
 
   // Navigate to product detail page
   // Update handleProductReturn function
-  const handleProductReturn = async (productid, orderid) => {
-    Swal.fire({
-      title: "Are you sure?",
-      text: "Do you really want to return this product?",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#3085d6",
-      cancelButtonColor: "#d33",
-      confirmButtonText: "Yes, return it!",
-    }).then(async (result) => {
-      if (result.isConfirmed) {
-        try {
-          const response = await axiosClient.post('/returnproductid', { productid, orderid });
-          console.log(response);
-          fetchUserOrders(); // Refresh orders after returning the product
+  const handleProductReturn = async () => {
+    if (!returnReason.trim()) {
+      toast.error("Please provide a reason for return.");
+      return;
+    }
 
-          Swal.fire("Returned!", "The product has been successfully returned.", "success");
-        } catch (error) {
-          console.error("Error returning product:", error);
+    try {
+      const response = await axiosClient.post('/returnproductid', { productid: productToReturn.productId, orderid: productToReturn.orderId, reason: returnReason });
+      console.log(response);
+      fetchUserOrders(); // Refresh orders after returning the product
 
-          Swal.fire("Error!", "Something went wrong while returning the product.", "error");
-        }
-      }
-    });
+      Swal.fire("Returned!", "The product has been successfully returned.", "success");
+      closeReturnModal();
+    } catch (error) {
+      console.error("Error returning product:", error);
+
+      Swal.fire("Error!", "Something went wrong while returning the product.", "error");
+    }
   };
 
 
@@ -433,7 +449,7 @@ const Orders = () => {
                       {/* Show "Return this product" button only if order is delivered and product is not returned */}
                       {order.status === "Delivered" && !product.isProductReturned && (
                         <button
-                          onClick={() => handleProductReturn(product.productId._id, order._id)}
+                          onClick={() => openReturnModal(product.productId._id, order._id)}
                           className="mt-2 py-1 px-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
                         >
                           Return this product
@@ -515,15 +531,52 @@ const Orders = () => {
       <div className="bg-white p-6 rounded-lg shadow-lg w-96">
         <h2 className="text-2xl font-bold mb-4">Confirm Cancel</h2>
         <p>Are you sure you want to cancel this order?</p>
+        <textarea
+          value={cancelReason}
+          onChange={(e) => setCancelReason(e.target.value)}
+          placeholder="provide reason to cancel"
+          className="w-full p-2 mt-2 border rounded"
+        />
         <div className="flex space-x-4 mt-4">
           <button
             onClick={() => handleCancelOrder(totalPrice)}
             className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+            disabled={!cancelReason.trim()}
           >
             Yes, Cancel
           </button>
           <button
             onClick={closeConfirmModal}
+            className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
+          >
+            No, Go Back
+          </button>
+        </div>
+      </div>
+    </div>
+  )}
+
+  {isReturnModalOpen && (
+    <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+        <h2 className="text-2xl font-bold mb-4">Confirm Return</h2>
+        <p>Are you sure you want to return this product?</p>
+        <textarea
+          value={returnReason}
+          onChange={(e) => setReturnReason(e.target.value)}
+          placeholder="Provide reason to return this product"
+          className="w-full p-2 mt-2 border rounded"
+        />
+        <div className="flex space-x-4 mt-4">
+          <button
+            onClick={handleProductReturn}
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+            disabled={!returnReason.trim()}
+          >
+            Yes, Return
+          </button>
+          <button
+            onClick={closeReturnModal}
             className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600"
           >
             No, Go Back
