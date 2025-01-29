@@ -185,7 +185,7 @@ const Profile = () => {
         </div>
 
         {isEditing ? (
-          <div className="flex space-x-4">
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <button onClick={handleSaveUser} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
               Save
             </button>
@@ -226,7 +226,7 @@ const Profile = () => {
 
       {isPasswordModalOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg w-96">
+          <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-md">
             <h2 className="text-2xl font-bold mb-4">Change Password</h2>
             <div className="mb-4 relative">
               <label className="block text-gray-700 font-bold mb-2">Old Password:</label>
@@ -279,7 +279,7 @@ const Profile = () => {
                 {showPasswords.confirmPassword ? "🙈" : "👁️"}
               </button>
             </div>
-            <div className="flex space-x-4">
+            <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
               <button onClick={handleChangePassword} className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
                 Save
               </button>
