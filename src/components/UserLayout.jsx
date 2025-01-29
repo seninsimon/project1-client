@@ -1,13 +1,23 @@
 import React, { useEffect } from "react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import ZenztoreNav from "./ZenztoreNav";
+import { toast } from "react-toastify";
 
 
 const UserLayout = () => {
 
   const navigate = useNavigate();
 
+  const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
 
+  useEffect(()=>
+  {
+      if(!token)
+      {
+        toast.error("please login to visit your profile")
+        navigate("/login")
+      }
+  },[])
 
 
   return (

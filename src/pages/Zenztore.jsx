@@ -11,7 +11,7 @@ const Zenztore = () => {
     const [page, setPage] = useState(1); // Track the current page
     const [totalPages, setTotalPages] = useState(1); // Track total pages
     const [isLoading, setIsLoading] = useState(false); // Track loading state
-
+    const token = localStorage.getItem("usertoken") || localStorage.getItem("authToken");
     const navigate = useNavigate();
     const section1 = useRef(null);
 
@@ -38,6 +38,12 @@ const Zenztore = () => {
     };
 
     const handleProductClick = (id) => {
+        if(!token)
+        {
+            toast.error("login to see product details")
+            navigate("/login")
+        }
+        else
         navigate(`/product/${id}`);
     };
 

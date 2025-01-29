@@ -46,7 +46,7 @@ const ProductDetails = () => {
 
     const [image, setImage] = useState("");
     const [zoomedImagePos, setZoomedImagePos] = useState({ top: 0, left: 0 });
-
+    const token = localStorage.getItem('usertoken') || localStorage.getItem('authToken');
 
 
 
