@@ -17,6 +17,7 @@ const Checkout = () => {
         state: ''
     });
     const [paymentMethod, setPaymentMethod] = useState('online_payment');
+
     const [errors, setErrors] = useState({});
     const [couponCode, setCouponCode] = useState('');
     const [discount, setDiscount] = useState(0);
@@ -25,8 +26,18 @@ const Checkout = () => {
     const [coupons, setCoupons] = useState([]);
     const navigate = useNavigate();
     const location = useLocation();
-
     const { totalPrice, cartItems } = location.state;
+
+
+    useEffect(() => {
+        const token = localStorage.getItem('usertoken') || localStorage.getItem('authToken');
+        if (!token) {
+
+            navigate("/login")
+            toast.error("user purchase denied !")
+            return
+        }
+    }, [])
 
     useEffect(() => {
         const confirmtoken = localStorage.getItem("orderconfirmed")
@@ -121,7 +132,9 @@ const Checkout = () => {
 
     // Updated handleConfirmOrder with coupon logic
     const handleConfirmOrder = async () => {
-        if (!selectedAddress) {
+
+   
+        if(!selectedAddress) {
             toast.error('Please select an address.');
             return;
         }
@@ -237,26 +250,25 @@ const Checkout = () => {
             }
 
         }
-        
-        else if (paymentMethod === 'wallet')
-        {
-           try {
 
-            const response = await axiosClient.post('/orderconfirm', orderData);
-            console.log("wallet purchace",orderData)
-            console.log("wallet response", response);
-            
-            localStorage.setItem("orderconfirmed", response.data.message);
-            navigate('/ordersuccessfull');
-            
-           } catch (error) {
-            console.error('Error confirming order:', error);
+        else if (paymentMethod === 'wallet') {
+            try {
+
+                const response = await axiosClient.post('/orderconfirm', orderData);
+                console.log("wallet purchace", orderData)
+                console.log("wallet response", response);
+
+                localStorage.setItem("orderconfirmed", response.data.message);
+                navigate('/ordersuccessfull');
+
+            } catch (error) {
+                console.error('Error confirming order:', error);
                 toast.error('Order confirmation failed due to insufficient balance.');
-           }
+            }
         }
-        
-        
-        
+
+
+
         else {
             try {
                 const response = await axiosClient.post('/orderconfirm', orderData);
@@ -595,20 +607,20 @@ const Checkout = () => {
 
                             {/* Available Coupons Section */}
                             {totalPrice > 1500 ?
-                            <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
-                            <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Coupons:</h3>
-                            <ul className="space-y-2">
-                                {coupons.map((cop) => (
-                                    <li
-                                        key={cop.code}
-                                        className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow"
-                                    >
-                                        <span className="font-medium text-gray-700">{cop.code}</span>
-                                        <span className="font-medium text-gray-700">discount : ₹{cop.discount}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div> : <p className="text-gray-700">Coupons are available for purchases over ₹1500.</p>
+                                <div className="bg-gray-50 p-4 rounded-lg shadow-sm">
+                                    <h3 className="text-lg font-semibold text-gray-800 mb-3">Available Coupons:</h3>
+                                    <ul className="space-y-2">
+                                        {coupons.map((cop) => (
+                                            <li
+                                                key={cop.code}
+                                                className="flex justify-between items-center p-3 bg-white border border-gray-200 rounded-md shadow-sm hover:shadow-md transition-shadow"
+                                            >
+                                                <span className="font-medium text-gray-700">{cop.code}</span>
+                                                <span className="font-medium text-gray-700">discount : ₹{cop.discount}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div> : <p className="text-gray-700">Coupons are available for purchases over ₹1500.</p>
 
                             }
                         </div>
