@@ -559,7 +559,7 @@ const Checkout = () => {
                             {/* Confirm Order Button */}
                             <button
                                 onClick={handleConfirmOrder}
-                                disabled={!selectedAddress}
+                                // disabled={!selectedAddress}
                                 className="w-full py-2 px-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-400 transition duration-300 disabled:opacity-50"
                             >
                                 Confirm Order
