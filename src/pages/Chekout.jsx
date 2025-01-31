@@ -262,8 +262,9 @@ const Checkout = () => {
                 navigate('/ordersuccessfull');
 
             } catch (error) {
-                console.error('Error confirming order:', error);
+                
                 toast.error('Order confirmation failed due to insufficient balance.');
+                console.error('Error confirming order:', error);
             }
         }
 
@@ -276,7 +277,7 @@ const Checkout = () => {
                 navigate('/ordersuccessfull');
 
             } catch (error) {
-                console.error('Error confirming order:', error);
+               
                 toast.error('Order confirmation failed.');
             }
         }
